@@ -1,28 +1,34 @@
-import { createClient } from "@supabase/supabase-js";
+document.getElementById("submitLink").addEventListener("click", async () => {
+  const name = document.getElementById("newName").value;
+  const url = document.getElementById("newURL").value;
+  const category = document.getElementById("newCategory").value;
 
-// Use environment variables
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_KEY;
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-async function fetchLinks() {
-  try {
-    const { data, error } = await supabase.from("links").select("*");
-    if (error) throw error;
-
-    const linkList = document.getElementById("linkList");
-    linkList.innerHTML = "";
-    data.forEach(link => {
-      const div = document.createElement("div");
-      div.className = "link-card";
-      div.innerHTML = `<a href="${link.url}" target="_blank">${link.name}</a>
-                       <span>${link.category}</span>`;
-      linkList.appendChild(div);
-    });
-  } catch (err) {
-    console.error("Error fetching links:", err.message);
+  if (!name || !url) {
+    document.getElementById("formMessage").textContent = "Name and URL are required!";
+    return;
   }
-}
 
-fetchLinks();
+  try {
+    const response = await fetch("/api/add-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, url, category })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      document.getElementById("formMessage").textContent = result.message;
+      document.getElementById("newName").value = "";
+      document.getElementById("newURL").value = "";
+      document.getElementById("newCategory").value = "";
+
+      fetchLinks(); // Refresh the list
+    } else {
+      document.getElementById("formMessage").textContent = result.error;
+    }
+  } catch (err) {
+    console.error(err);
+    document.getElementById("formMessage").textContent = "Error adding link.";
+  }
+});
