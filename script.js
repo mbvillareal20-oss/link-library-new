@@ -1,104 +1,71 @@
-// Supabase setup
-const SUPABASE_URL = "https://cqxuxfnhjmtxnmwkwzpj.supabase.co"; // your project URL
-const SUPABASE_KEY = "sbp_d4331e29666c651a23d5add1938c39edd092bdb4"; // your secret key
-
 // Supabase client
-const supabase = supabaseJsClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_URL = "https://cqxuxfnhjmtxnmwkwzpj.supabase.co";
+const SUPABASE_KEY = "sbp_d4331e29666c651a23d5add1938c39edd092bdb4";
 
-// DOM elements
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// DOM Elements
+const linkList = document.getElementById("linkList");
+const submitLink = document.getElementById("submitLink");
 const newName = document.getElementById("newName");
 const newURL = document.getElementById("newURL");
 const newCategory = document.getElementById("newCategory");
-const submitButton = document.getElementById("submitLink");
 const formMessage = document.getElementById("formMessage");
-const linkList = document.getElementById("linkList");
 
-// Add link
-submitButton.addEventListener("click", async () => {
-  const Name = newName.value.trim();
-  const URL = newURL.value.trim();
-  const Category = newCategory.value.trim();
-
-  if (!Name || !URL || !Category) {
-    formMessage.textContent = "⚠️ All fields are required!";
-    formMessage.style.color = "red";
-    return;
-  }
-
-  const { data, error } = await supabase
-    .from("links") // replace with your table name
-    .insert([{ Name, URL, Category }]);
-
-  if (error) {
-    formMessage.textContent = "❌ Error adding link: " + error.message;
-    formMessage.style.color = "red";
-    console.error(error);
-  } else {
-    formMessage.textContent = "✅ Link added successfully!";
-    formMessage.style.color = "green";
-    newName.value = "";
-    newURL.value = "";
-    newCategory.value = "";
-    fetchLinks(); // refresh
-  }
-});
-
-// Fetch and display all links
-async function fetchLinks() {
+// Load links on page load
+async function loadLinks() {
   const { data, error } = await supabase
     .from("links")
     .select("*")
-    .order("id", { ascending: true });
+    .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Error fetching links:", error);
+    formMessage.textContent = "Error loading links.";
+    console.error(error);
     return;
   }
 
   linkList.innerHTML = "";
-  data.forEach(item => {
-    const card = document.createElement("div");
-    card.classList.add("link-card");
-    card.innerHTML = `<a href="${item.URL}" target="_blank">${item.Name}</a>
-                      <span>${item.Category}</span>`;
-    linkList.appendChild(card);
+  data.forEach((link) => {
+    const div = document.createElement("div");
+    div.className = "link-card";
+    div.innerHTML = `
+      <a href="${link.url}" target="_blank">${link.name}</a>
+      <span>${link.category}</span>
+    `;
+    linkList.appendChild(div);
   });
 }
 
-// Initial load
-fetchLinks();
+// Add a new link
+submitLink.addEventListener("click", async () => {
+  const name = newName.value.trim();
+  const url = newURL.value.trim();
+  const category = newCategory.value.trim();
 
-/**
- * Minimal Supabase JS client
- */
-function supabaseJsClient(url, key) {
-  return {
-    from: (table) => ({
-      select: async () => {
-        const res = await fetch(`${url}/rest/v1/${table}?select=*`, {
-          headers: {
-            "apikey": key,
-            "Authorization": "Bearer " + key
-          }
-        });
-        const data = await res.json();
-        return { data, error: null };
-      },
-      insert: async (rows) => {
-        const res = await fetch(`${url}/rest/v1/${table}`, {
-          method: "POST",
-          headers: {
-            "apikey": key,
-            "Authorization": "Bearer " + key,
-            "Content-Type": "application/json",
-            "Prefer": "return=representation"
-          },
-          body: JSON.stringify(rows)
-        });
-        const data = await res.json();
-        return { data, error: null };
-      },
-      order: function(){ return this; } // dummy for chaining
-    })
-  };
-}
+  if (!name || !url) {
+    formMessage.textContent = "Name and URL are required!";
+    return;
+  }
+
+  const { data, error } = await supabase.from("links").insert([
+    { name, url, category }
+  ]);
+
+  if (error) {
+    formMessage.textContent = "Error adding link!";
+    console.error(error);
+    return;
+  }
+
+  newName.value = "";
+  newURL.value = "";
+  newCategory.value = "";
+  formMessage.textContent = "Link added!";
+  loadLinks();
+});
+
+// Initial load
+loadLinks();
