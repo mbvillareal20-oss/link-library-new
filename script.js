@@ -1,6 +1,5 @@
 const linkList = document.getElementById("linkList");
 const submitBtn = document.getElementById("submitLink");
-const formMessage = document.getElementById("formMessage");
 
 async function fetchLinks() {
   try {
@@ -10,15 +9,11 @@ async function fetchLinks() {
     data.forEach(link => {
       const div = document.createElement("div");
       div.className = "link-card";
-      div.innerHTML = `
-        <a href="${link.url}" target="_blank">${link.name}</a>
-        <span>${link.category || ""}</span>
-      `;
+      div.innerHTML = `<a href="${link.url}" target="_blank">${link.name}</a> <span>${link.category || ""}</span>`;
       linkList.appendChild(div);
     });
   } catch (err) {
     console.error("Error fetching links:", err);
-    formMessage.textContent = "Error fetching links";
   }
 }
 
@@ -33,23 +28,14 @@ submitBtn.addEventListener("click", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, url, category })
     });
-
     const data = await res.json();
-    if (data.error) {
-      formMessage.textContent = `Error adding link: ${data.error}`;
-      return;
-    }
-
-    formMessage.textContent = "Link added successfully!";
-    document.getElementById("newName").value = "";
-    document.getElementById("newURL").value = "";
-    document.getElementById("newCategory").value = "";
-    fetchLinks();
+    if (data.error) throw new Error(data.error);
+    fetchLinks(); // refresh list
+    alert("Link added successfully!");
   } catch (err) {
-    console.error(err);
-    formMessage.textContent = "Error adding link.";
+    console.error("Error adding link:", err);
+    alert("Error adding link.");
   }
 });
 
-// Load links on page load
-fetchLinks();
+fetchLinks(); // load on page load
