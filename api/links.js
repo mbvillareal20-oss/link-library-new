@@ -1,13 +1,18 @@
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY; // from Vercel env
+const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
+  console.log("Request body:", req.body);
+
   if (req.method === "GET") {
     const { data, error } = await supabase.from("links").select("*");
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+      console.error("GET Error:", error);
+      return res.status(500).json({ error: error.message });
+    }
     return res.status(200).json(data);
   }
 
@@ -16,7 +21,10 @@ export default async function handler(req, res) {
     if (!name || !url) return res.status(400).json({ error: "Name and URL required" });
 
     const { data, error } = await supabase.from("links").insert([{ name, url, category }]);
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+      console.error("POST Error:", error);
+      return res.status(500).json({ error: error.message });
+    }
     return res.status(200).json({ success: true, data });
   }
 
